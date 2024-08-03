@@ -4,7 +4,7 @@ import json
 
 # Substitua 'YOUR_TOKEN' pelo token do seu bot
 TOKEN = '7227344806:AAGsi2PITxi6ab51w7WL79PsV9YLmNBWYAg'
-GAME_URL = 'https://abinaell.github.io/mini_jogos/'  # Substitua pelo URL fornecido pelo ngrok
+GAME_URL = 'https://abinaell.github.io/mini_app/'  # Substitua pelo URL fornecido pelo ngrok
 
 # Função para carregar usuários do arquivo JSON
 def load_users():
