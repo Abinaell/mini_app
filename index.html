@@ -19,7 +19,7 @@
             physics: {
                 default: 'arcade',
                 arcade: {
-                    gravity: { y: 300 },
+                    gravity: { y: 0 },
                     debug: false
                 }
             },
@@ -35,12 +35,20 @@
         let player;
         let obstacles;
         let score = 0;
+        let highScore = 0;
         let scoreText;
+        let highScoreText;
         let restartButton;
         let particles;
         let isJumping = false;
         let jumpForce = 0;
+        let gravity = 2.6;
+        let rotationSpeed = -5.3;
+        let rotationAngle = 0;
         let cameraX = 0;
+        let groundLength = 0;
+        let particleEmitter;
+        let gameOver = false;
 
         function preload() {
             this.load.image('player', 'https://via.placeholder.com/50/FFFF00/000000?text=+');  // Substitua pelo caminho da imagem do jogador
@@ -49,7 +57,8 @@
         }
 
         function create() {
-            player = this.physics.add.sprite(50, 600, 'player').setCollideWorldBounds(true);
+            player = this.physics.add.sprite(50, 600, 'player').setSize(50, 50).setCollideWorldBounds(true);
+            player.setBounce(0);
 
             obstacles = this.physics.add.group({
                 key: 'obstacle',
@@ -58,16 +67,31 @@
             });
 
             obstacles.children.iterate(child => {
-                child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+                child.setSize(40, 40);
+                child.setCollideWorldBounds(true);
+                child.setBounce(0.2);
             });
 
             this.physics.add.collider(player, obstacles, () => {
-                gameOver.call(this);
+                if (!gameOver) gameOver = true;
             });
 
             particles = this.add.particles('particle');
 
+            particleEmitter = particles.createEmitter({
+                speed: 200,
+                lifespan: 1500,
+                quantity: 1,
+                scale: { start: 1, end: 0 },
+                on: false
+            });
+
             scoreText = this.add.text(16, 16, 'Score: 0', {
+                fontSize: '32px',
+                fill: '#fff'
+            });
+
+            highScoreText = this.add.text(config.width - 160, 16, 'High Score: 0', {
                 fontSize: '32px',
                 fill: '#fff'
             });
@@ -78,65 +102,87 @@
             }).setOrigin(0.5).setInteractive().setVisible(false);
 
             restartButton.on('pointerdown', () => {
-                resetGame.call(this);
+                if (gameOver) resetGame.call(this);
+            });
+
+            this.input.on('pointerdown', () => {
+                if (gameOver) return;
+                if (!isJumping) {
+                    isJumping = true;
+                    jumpForce = -20;
+                }
             });
         }
 
         function update() {
-            if (isJumping) {
-                player.setY(player.y + jumpForce);
-                jumpForce += 0.2;
+            if (!gameOver) {
+                if (isJumping) {
+                    player.setY(player.y + jumpForce);
+                    jumpForce += 0.2;
 
-                if (player.y > 600) {
-                    player.setY(600);
-                    isJumping = false;
-                    jumpForce = 0;
+                    if (player.y > 600) {
+                        player.setY(600);
+                        isJumping = false;
+                        jumpForce = 0;
+                    }
+
+                    rotationAngle += rotationSpeed;
+                } else {
+                    player.setY(player.y + gravity);
+
+                    if (rotationAngle !== 0) rotationAngle = 0;
                 }
-            } else {
-                player.setY(player.y + 2);
+
+                player.x += 4;
+                cameraX = player.x - config.width / 7;
+                groundLength += 4;
+
+                obstacles.children.iterate(child => {
+                    child.setX(child.x - 4);
+
+                    if (child.x < -50) {
+                        child.setX(config.width + 50);
+                    }
+                });
+
+                score += 1;
+                scoreText.setText('Score: ' + score);
+                highScoreText.setText('High Score: ' + highScore);
+
+                particles.emitParticleAt(player.x + 25, player.y + 25, 10);
+
+                if (checkCollision()) {
+                    gameOver = true;
+                }
             }
 
-            if (player.y > 600) {
-                player.setY(600);
+            if (gameOver) {
+                restartButton.setVisible(true);
+                this.physics.pause();
             }
+        }
 
-            player.x += 4;
-            cameraX = player.x - config.width / 7;
-
-            obstacles.children.iterate(child => {
-                child.setX(child.x - 4);
-                if (child.x < -50) {
-                    child.setX(config.width + 50);
+        function checkCollision() {
+            return obstacles.children.iterate(child => {
+                if (player.getBounds().intersects(child.getBounds())) {
+                    return true;
                 }
             });
-
-            score += 1;
-            scoreText.setText('Score: ' + score);
-
-            particles.emitParticleAt(player.x + 25, player.y + 25, 10);
-
-            if (isGameOver()) {
-                gameOver.call(this);
-            }
-        }
-
-        function isGameOver() {
-            return player.x > config.width - 50;
-        }
-
-        function gameOver() {
-            restartButton.setVisible(true);
-            this.physics.pause();
-            this.cameras.main.shake(500);
-            this.cameras.main.fade(500);
         }
 
         function resetGame() {
             score = 0;
             scoreText.setText('Score: ' + score);
             player.setPosition(50, 600);
+            isJumping = false;
+            jumpForce = 0;
+            gameOver = false;
             this.physics.resume();
             restartButton.setVisible(false);
+
+            if (score > highScore) {
+                highScore = score;
+            }
         }
     </script>
 </body>
