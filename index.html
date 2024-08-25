@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Geometric Dash Clone</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
     <style>
@@ -35,17 +37,19 @@
         let score = 0;
         let scoreText;
         let restartButton;
-        let gameOver = false;
+        let particles;
+        let isJumping = false;
+        let jumpForce = 0;
+        let cameraX = 0;
 
         function preload() {
-            this.load.image('player', 'https://via.placeholder.com/50');  // Imagem do jogador
-            this.load.image('obstacle', 'https://via.placeholder.com/40');  // Imagem do obstáculo
+            this.load.image('player', 'https://via.placeholder.com/50/FFFF00/000000?text=+');  // Substitua pelo caminho da imagem do jogador
+            this.load.image('obstacle', 'https://via.placeholder.com/40/000000/FFFFFF?text='); // Substitua pelo caminho da imagem do obstáculo
+            this.load.image('particle', 'https://via.placeholder.com/4/FFFFFF/FFFFFF'); // Substitua pelo caminho da imagem da partícula
         }
 
         function create() {
-            player = this.physics.add.sprite(100, 600, 'player');
-            player.setCollideWorldBounds(true);
-            player.setGravityY(300);
+            player = this.physics.add.sprite(50, 600, 'player').setCollideWorldBounds(true);
 
             obstacles = this.physics.add.group({
                 key: 'obstacle',
@@ -53,12 +57,15 @@
                 setXY: { x: 400, y: 0, stepX: 200 }
             });
 
-            obstacles.children.iterate(function (child) {
+            obstacles.children.iterate(child => {
                 child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
-                child.setVelocityX(-200);
             });
 
-            this.physics.add.collider(player, obstacles, hitObstacle, null, this);
+            this.physics.add.collider(player, obstacles, () => {
+                gameOver.call(this);
+            });
+
+            particles = this.add.particles('particle');
 
             scoreText = this.add.text(16, 16, 'Score: 0', {
                 fontSize: '32px',
@@ -73,58 +80,63 @@
             restartButton.on('pointerdown', () => {
                 resetGame.call(this);
             });
-
-            this.input.keyboard.on('keydown-SPACE', () => {
-                if (!gameOver) {
-                    jump();
-                }
-            });
         }
 
         function update() {
-            if (gameOver) {
-                restartButton.setVisible(true);
-                return;
+            if (isJumping) {
+                player.setY(player.y + jumpForce);
+                jumpForce += 0.2;
+
+                if (player.y > 600) {
+                    player.setY(600);
+                    isJumping = false;
+                    jumpForce = 0;
+                }
+            } else {
+                player.setY(player.y + 2);
             }
 
-            if (player.y > config.height) {
-                gameOver = true;
-                player.setVelocityY(0);
-                scoreText.setText('Game Over');
-                restartButton.setVisible(true);
-                return;
+            if (player.y > 600) {
+                player.setY(600);
             }
+
+            player.x += 4;
+            cameraX = player.x - config.width / 7;
+
+            obstacles.children.iterate(child => {
+                child.setX(child.x - 4);
+                if (child.x < -50) {
+                    child.setX(config.width + 50);
+                }
+            });
 
             score += 1;
             scoreText.setText('Score: ' + score);
-        }
 
-        function hitObstacle(player, obstacle) {
-            gameOver = true;
-            player.setVelocityY(0);
-            scoreText.setText('Game Over');
-            restartButton.setVisible(true);
-        }
+            particles.emitParticleAt(player.x + 25, player.y + 25, 10);
 
-        function jump() {
-            if (player.body.touching.down) {
-                player.setVelocityY(-330);
+            if (isGameOver()) {
+                gameOver.call(this);
             }
         }
 
+        function isGameOver() {
+            return player.x > config.width - 50;
+        }
+
+        function gameOver() {
+            restartButton.setVisible(true);
+            this.physics.pause();
+            this.cameras.main.shake(500);
+            this.cameras.main.fade(500);
+        }
+
         function resetGame() {
-            gameOver = false;
             score = 0;
             scoreText.setText('Score: ' + score);
+            player.setPosition(50, 600);
+            this.physics.resume();
             restartButton.setVisible(false);
-
-            player.setPosition(100, 600);
-            player.setVelocity(0, 0);
-
-            obstacles.children.iterate(function (child) {
-                child.setX(Phaser.Math.Between(config.width, config.width + 1000));
-                child.setVelocityX(-200);
-            });
         }
     </script>
 </body>
