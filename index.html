@@ -66,6 +66,10 @@
                     const userId = tg.initDataUnsafe.user.id;
                     const userName = tg.initDataUnsafe.user.username || tg.initDataUnsafe.user.first_name;
 
+                    console.log("Telegram WebApp Data: ", tg.initDataUnsafe); // Log dos dados do usuário
+                    console.log("User ID: ", userId); // Log do ID do usuário
+                    console.log("User Name: ", userName); // Log do nome do usuário
+
                     // Atualiza o nome de usuário na tela
                     document.getElementById('userName').textContent = `Olá, ${userName}`;
 
