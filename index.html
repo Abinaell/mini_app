@@ -1,41 +1,97 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro Telegram Mini App</title>
+    <title>Web App com Firebase</title>
     <style>
-        body, html {
-            height: 100%;
-            margin: 0;
+        /* Estilo para o quadrado e o layout principal */
+        .container {
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
+            height: 100vh;
             background-color: #f0f0f0;
         }
-        #userName {
-            font-size: 18px;
-            margin-bottom: 20px;
-            color: #333;
-        }
-        #square {
+
+        .square {
             width: 100px;
             height: 100px;
-            background-color: #4CAF50;
+            background-color: #3498db;
+        }
+
+        /* Estilo para os modais */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
         }
     </style>
-    <!-- Adicione o SDK do Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js"></script>
-    <!-- Adicione o SDK do Telegram Web App -->
-    <script async src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-    <div id="userName">Carregando...</div>
-    <div id="square"></div>
+    <div class="container">
+        <div class="square"></div>
+    </div>
 
+    <!-- Botões para abrir modais -->
+    <button id="open-register-modal">Registrar</button>
+    <button id="open-login-modal">Login</button>
+
+    <!-- Modal de Registro -->
+    <div id="register-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="close-register-modal">&times;</span>
+            <h2>Registrar</h2>
+            <input type="text" id="register-username" placeholder="Nome de usuário">
+            <input type="password" id="register-password" placeholder="Senha">
+            <button id="register-btn">Registrar</button>
+        </div>
+    </div>
+
+    <!-- Modal de Login -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="close-login-modal">&times;</span>
+            <h2>Login</h2>
+            <input type="text" id="login-username" placeholder="Nome de usuário">
+            <input type="password" id="login-password" placeholder="Senha">
+            <button id="login-btn">Login</button>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore.js"></script>
     <script>
         // Configuração do Firebase
         const firebaseConfig = {
@@ -47,52 +103,81 @@
             appId: "1:260953470099:web:1b5468e7444136a3100966"
         };
 
-        // Inicialize o Firebase
-        const app = firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+        // Inicializa o Firebase
+        firebase.initializeApp(firebaseConfig);
 
-        // Função para verificar se está no Telegram Mini App
-        function isTelegramWebApp() {
-            return window.Telegram && window.Telegram.WebApp;
+        // Referências do Firebase
+        const auth = firebase.auth();
+
+        // Seleção dos elementos DOM
+        const registerModal = document.getElementById('register-modal');
+        const loginModal = document.getElementById('login-modal');
+        const openRegisterModalBtn = document.getElementById('open-register-modal');
+        const openLoginModalBtn = document.getElementById('open-login-modal');
+        const closeRegisterModalBtn = document.getElementById('close-register-modal');
+        const closeLoginModalBtn = document.getElementById('close-login-modal');
+        const registerBtn = document.getElementById('register-btn');
+        const loginBtn = document.getElementById('login-btn');
+
+        // Função para abrir o modal de registro
+        openRegisterModalBtn.onclick = function() {
+            registerModal.style.display = 'block';
         }
 
-        // Função para registrar o usuário
-        function registerUser() {
-            if (isTelegramWebApp()) {
-                const tg = window.Telegram.WebApp;
+        // Função para abrir o modal de login
+        openLoginModalBtn.onclick = function() {
+            loginModal.style.display = 'block';
+        }
 
-                // Verifique se `tg.initDataUnsafe` está disponível
-                if (tg.initDataUnsafe) {
-                    const userId = tg.initDataUnsafe.user.id;
-                    const userName = tg.initDataUnsafe.user.username || tg.initDataUnsafe.user.first_name;
+        // Função para fechar o modal de registro
+        closeRegisterModalBtn.onclick = function() {
+            registerModal.style.display = 'none';
+        }
 
-                    console.log("Telegram WebApp Data: ", tg.initDataUnsafe); // Log dos dados do usuário
-                    console.log("User ID: ", userId); // Log do ID do usuário
-                    console.log("User Name: ", userName); // Log do nome do usuário
+        // Função para fechar o modal de login
+        closeLoginModalBtn.onclick = function() {
+            loginModal.style.display = 'none';
+        }
 
-                    // Atualiza o nome de usuário na tela
-                    document.getElementById('userName').textContent = `Olá, ${userName}`;
+        // Registro de usuário
+        registerBtn.onclick = function() {
+            const username = document.getElementById('register-username').value;
+            const password = document.getElementById('register-password').value;
+            
+            auth.createUserWithEmailAndPassword(username, password)
+                .then((userCredential) => {
+                    console.log('Usuário registrado:', userCredential.user);
+                    registerModal.style.display = 'none';
+                })
+                .catch((error) => {
+                    console.error('Erro ao registrar:', error);
+                });
+        }
 
-                    // Registra o usuário no Firebase
-                    const userRef = database.ref('users/' + userId);
-                    userRef.set({
-                        id: userId,
-                        name: userName
-                    }).then(() => {
-                        console.log("Registro realizado com sucesso!");
-                    }).catch((error) => {
-                        console.error("Erro ao registrar no Firebase: ", error);
-                    });
-                } else {
-                    console.error("Dados do Telegram WebApp não estão disponíveis.");
-                }
-            } else {
-                alert("Este site deve ser acessado via Telegram Mini App.");
+        // Login de usuário
+        loginBtn.onclick = function() {
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+
+            auth.signInWithEmailAndPassword(username, password)
+                .then((userCredential) => {
+                    console.log('Usuário logado:', userCredential.user);
+                    loginModal.style.display = 'none';
+                })
+                .catch((error) => {
+                    console.error('Erro ao logar:', error);
+                });
+        }
+
+        // Fechar o modal ao clicar fora do modal
+        window.onclick = function(event) {
+            if (event.target == registerModal) {
+                registerModal.style.display = 'none';
+            }
+            if (event.target == loginModal) {
+                loginModal.style.display = 'none';
             }
         }
-
-        // Execute a função de registro ao carregar a página
-        document.addEventListener("DOMContentLoaded", registerUser);
     </script>
 </body>
 </html>
