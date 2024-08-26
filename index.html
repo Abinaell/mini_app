@@ -1,188 +1,71 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geometric Dash Clone</title>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
+    <title>Registro Telegram Mini App</title>
     <style>
-        body { margin: 0; }
-        canvas { display: block; }
+        body, html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f0f0f0;
+        }
+        #square {
+            width: 100px;
+            height: 100px;
+            background-color: #4CAF50;
+        }
     </style>
+    <!-- Adicione o SDK do Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js"></script>
 </head>
 <body>
+    <div id="square"></div>
+
     <script>
-        const config = {
-            type: Phaser.AUTO,
-            width: 1280,
-            height: 720,
-            physics: {
-                default: 'arcade',
-                arcade: {
-                    gravity: { y: 0 },
-                    debug: false
-                }
-            },
-            scene: {
-                preload: preload,
-                create: create,
-                update: update
-            }
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyBgueYjLWxgyGJM4un1yzoG-IDQTt4vfLY",
+            authDomain: "mine2001-f3b8a.firebaseapp.com",
+            projectId: "mine2001-f3b8a",
+            storageBucket: "mine2001-f3b8a.appspot.com",
+            messagingSenderId: "260953470099",
+            appId: "1:260953470099:web:1b5468e7444136a3100966"
         };
 
-        const game = new Phaser.Game(config);
+        // Inicialize o Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
 
-        let player;
-        let obstacles;
-        let score = 0;
-        let highScore = 0;
-        let scoreText;
-        let highScoreText;
-        let restartButton;
-        let particles;
-        let isJumping = false;
-        let jumpForce = 0;
-        let gravity = 2.6;
-        let rotationSpeed = -5.3;
-        let rotationAngle = 0;
-        let cameraX = 0;
-        let groundLength = 0;
-        let particleEmitter;
-        let gameOver = false;
-
-        function preload() {
-            this.load.image('player', 'https://via.placeholder.com/50/FFFF00/000000?text=+');  // Substitua pelo caminho da imagem do jogador
-            this.load.image('obstacle', 'https://via.placeholder.com/40/000000/FFFFFF?text='); // Substitua pelo caminho da imagem do obstáculo
-            this.load.image('particle', 'https://via.placeholder.com/4/FFFFFF/FFFFFF'); // Substitua pelo caminho da imagem da partícula
+        // Função para verificar se está no Telegram Mini App
+        function isTelegramWebApp() {
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            return userAgent.indexOf("Telegram") > -1;
         }
 
-        function create() {
-            player = this.physics.add.sprite(50, 600, 'player').setSize(50, 50).setCollideWorldBounds(true);
-            player.setBounce(0);
+        // Registro automático ao detectar que está no Telegram
+        if (isTelegramWebApp()) {
+            // Supondo que o objeto `Telegram.WebApp` esteja disponível
+            const tg = window.Telegram.WebApp;
 
-            obstacles = this.physics.add.group({
-                key: 'obstacle',
-                repeat: 5,
-                setXY: { x: 400, y: 0, stepX: 200 }
+            const userId = tg.initDataUnsafe.user.id;
+            const userName = tg.initDataUnsafe.user.username || tg.initDataUnsafe.user.first_name;
+
+            // Registra o usuário no Firebase
+            const userRef = database.ref('users/' + userId);
+            userRef.set({
+                id: userId,
+                name: userName
             });
 
-            obstacles.children.iterate(child => {
-                child.setSize(40, 40);
-                child.setCollideWorldBounds(true);
-                child.setBounce(0.2);
-            });
-
-            this.physics.add.collider(player, obstacles, () => {
-                if (!gameOver) gameOver = true;
-            });
-
-            particles = this.add.particles('particle');
-
-            particleEmitter = particles.createEmitter({
-                speed: 200,
-                lifespan: 1500,
-                quantity: 1,
-                scale: { start: 1, end: 0 },
-                on: false
-            });
-
-            scoreText = this.add.text(16, 16, 'Score: 0', {
-                fontSize: '32px',
-                fill: '#fff'
-            });
-
-            highScoreText = this.add.text(config.width - 160, 16, 'High Score: 0', {
-                fontSize: '32px',
-                fill: '#fff'
-            });
-
-            restartButton = this.add.text(config.width / 2, config.height / 2, 'Restart', {
-                fontSize: '32px',
-                fill: '#fff'
-            }).setOrigin(0.5).setInteractive().setVisible(false);
-
-            restartButton.on('pointerdown', () => {
-                if (gameOver) resetGame.call(this);
-            });
-
-            this.input.on('pointerdown', () => {
-                if (gameOver) return;
-                if (!isJumping) {
-                    isJumping = true;
-                    jumpForce = -20;
-                }
-            });
-        }
-
-        function update() {
-            if (!gameOver) {
-                if (isJumping) {
-                    player.setY(player.y + jumpForce);
-                    jumpForce += 0.2;
-
-                    if (player.y > 600) {
-                        player.setY(600);
-                        isJumping = false;
-                        jumpForce = 0;
-                    }
-
-                    rotationAngle += rotationSpeed;
-                } else {
-                    player.setY(player.y + gravity);
-
-                    if (rotationAngle !== 0) rotationAngle = 0;
-                }
-
-                player.x += 4;
-                cameraX = player.x - config.width / 7;
-                groundLength += 4;
-
-                obstacles.children.iterate(child => {
-                    child.setX(child.x - 4);
-
-                    if (child.x < -50) {
-                        child.setX(config.width + 50);
-                    }
-                });
-
-                score += 1;
-                scoreText.setText('Score: ' + score);
-                highScoreText.setText('High Score: ' + highScore);
-
-                particles.emitParticleAt(player.x + 25, player.y + 25, 10);
-
-                if (checkCollision()) {
-                    gameOver = true;
-                }
-            }
-
-            if (gameOver) {
-                restartButton.setVisible(true);
-                this.physics.pause();
-            }
-        }
-
-        function checkCollision() {
-            return obstacles.children.iterate(child => {
-                if (player.getBounds().intersects(child.getBounds())) {
-                    return true;
-                }
-            });
-        }
-
-        function resetGame() {
-            score = 0;
-            scoreText.setText('Score: ' + score);
-            player.setPosition(50, 600);
-            isJumping = false;
-            jumpForce = 0;
-            gameOver = false;
-            this.physics.resume();
-            restartButton.setVisible(false);
-
-            if (score > highScore) {
-                highScore = score;
-            }
+            alert("Registro realizado com sucesso!");
+        } else {
+            alert("Este site deve ser acessado via Telegram Mini App.");
         }
     </script>
 </body>
