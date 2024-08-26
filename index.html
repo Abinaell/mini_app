@@ -25,7 +25,9 @@
             background-color: #4CAF50;
         }
     </style>
+    <!-- Adicione o SDK do Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js"></script>
 </head>
 <body>
@@ -44,48 +46,46 @@
         };
 
         // Inicialize o Firebase
-        const app = firebase.initializeApp(firebaseConfig);
+        firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
         // Função para verificar se está no Telegram Mini App
         function isTelegramWebApp() {
             const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-            return userAgent.indexOf("Telegram") > -1;
+            console.log("User Agent: ", userAgent); // Debug
+            return userAgent.includes("Telegram");
         }
 
         // Registro automático ao detectar que está no Telegram
         if (isTelegramWebApp()) {
             console.log("No Telegram Mini App"); // Debug
 
-            if (window.Telegram && window.Telegram.WebApp) {
-                const tg = window.Telegram.WebApp;
-                
-                console.log("Telegram WebApp Data: ", tg.initData); 
+            // Supondo que o objeto `Telegram.WebApp` esteja disponível
+            const tg = window.Telegram.WebApp;
+            
+            if (tg && tg.initDataUnsafe) {
+                const userId = tg.initDataUnsafe.user.id;
+                const userName = tg.initDataUnsafe.user.username || tg.initDataUnsafe.user.first_name;
 
-                try {
-                    const userId = tg.initData?.user?.id;
-                    const userName = tg.initData?.user?.username || tg.initData?.user?.first_name;
+                console.log("User ID: ", userId); // Debug
+                console.log("User Name: ", userName); // Debug
 
-                    if (userId && userName) {
-                        document.getElementById('userName').textContent = `Olá, ${userName}`;
+                // Atualiza o nome de usuário na tela
+                document.getElementById('userName').textContent = `Olá, ${userName}`;
 
-                        const userRef = database.ref('users/' + userId);
-                        userRef.set({
-                            id: userId,
-                            name: userName
-                        }).then(() => {
-                            alert("Registro realizado com sucesso!");
-                        }).catch((error) => {
-                            console.error("Erro ao registrar no Firebase: ", error); // Debug
-                        });
-                    } else {
-                        alert("Não foi possível obter dados do usuário.");
-                    }
-                } catch (error) {
-                    console.error("Erro ao acessar dados do Telegram WebApp: ", error); // Debug
-                }
+                // Registra o usuário no Firebase
+                const userRef = database.ref('users/' + userId);
+                userRef.set({
+                    id: userId,
+                    name: userName
+                }).then(() => {
+                    alert("Registro realizado com sucesso!");
+                }).catch((error) => {
+                    console.error("Erro ao registrar no Firebase: ", error); // Debug
+                });
             } else {
-                alert("O objeto Telegram.WebApp não está disponível.");
+                console.error("Dados do Telegram WebApp não encontrados"); // Debug
+                alert("Erro ao acessar dados do Telegram.");
             }
         } else {
             alert("Este site deve ser acessado via Telegram Mini App.");
