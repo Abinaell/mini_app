@@ -9,9 +9,15 @@
             height: 100%;
             margin: 0;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             background-color: #f0f0f0;
+        }
+        #userName {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #333;
         }
         #square {
             width: 100px;
@@ -25,6 +31,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js"></script>
 </head>
 <body>
+    <div id="userName">Carregando...</div>
     <div id="square"></div>
 
     <script>
@@ -64,6 +71,9 @@
 
             console.log("User ID: ", userId); // Debug
             console.log("User Name: ", userName); // Debug
+
+            // Atualiza o nome de usuário na tela
+            document.getElementById('userName').textContent = `Olá, ${userName}`;
 
             // Registra o usuário no Firebase
             const userRef = database.ref('users/' + userId);
