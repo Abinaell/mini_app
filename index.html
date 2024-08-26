@@ -45,25 +45,37 @@
         // Função para verificar se está no Telegram Mini App
         function isTelegramWebApp() {
             const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            console.log("User Agent: ", userAgent); // Debug
             return userAgent.indexOf("Telegram") > -1;
         }
 
         // Registro automático ao detectar que está no Telegram
         if (isTelegramWebApp()) {
+            console.log("No Telegram Mini App"); // Debug
+
             // Supondo que o objeto `Telegram.WebApp` esteja disponível
             const tg = window.Telegram.WebApp;
+            
+            // Debug: Verificar se `tg.initDataUnsafe` está disponível
+            console.log("Telegram WebApp Data: ", tg.initDataUnsafe); 
 
             const userId = tg.initDataUnsafe.user.id;
             const userName = tg.initDataUnsafe.user.username || tg.initDataUnsafe.user.first_name;
+
+            console.log("User ID: ", userId); // Debug
+            console.log("User Name: ", userName); // Debug
 
             // Registra o usuário no Firebase
             const userRef = database.ref('users/' + userId);
             userRef.set({
                 id: userId,
                 name: userName
+            }).then(() => {
+                alert("Registro realizado com sucesso!");
+            }).catch((error) => {
+                console.error("Erro ao registrar no Firebase: ", error); // Debug
             });
 
-            alert("Registro realizado com sucesso!");
         } else {
             alert("Este site deve ser acessado via Telegram Mini App.");
         }
