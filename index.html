@@ -20,6 +20,21 @@
             background-color: #3498db;
         }
 
+        /* Estilo para os botões */
+        #open-register-modal, #open-login-modal {
+            margin: 10px;
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        #open-register-modal:hover, #open-login-modal:hover {
+            background-color: #2980b9;
+        }
+
         /* Estilo para os modais */
         .modal {
             display: none;
@@ -30,7 +45,7 @@
             width: 100%;
             height: 100%;
             overflow: auto;
-            background-color: rgba(0,0,0,0.4);
+            background-color: rgba(0, 0, 0, 0.4);
         }
 
         .modal-content {
@@ -87,8 +102,10 @@
     </div>
 
     <!-- Botões para abrir modais -->
-    <button id="open-register-modal">Registrar</button>
-    <button id="open-login-modal">Login</button>
+    <div style="text-align:center; margin-top: 20px;">
+        <button id="open-register-modal">Registrar</button>
+        <button id="open-login-modal">Login</button>
+    </div>
 
     <!-- Modal de Registro -->
     <div id="register-modal" class="modal">
@@ -115,7 +132,6 @@
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.11/firebase-firestore.js"></script>
     <script>
         // Configuração do Firebase
         const firebaseConfig = {
@@ -128,9 +144,7 @@
         };
 
         // Inicializa o Firebase
-        firebase.initializeApp(firebaseConfig);
-
-        // Referências do Firebase
+        const app = firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
 
         // Seleção dos elementos DOM
